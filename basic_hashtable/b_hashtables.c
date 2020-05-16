@@ -80,7 +80,7 @@ BasicHashTable *create_hash_table(int capacity)
 		return NULL;
 	}
 	ht->capacity = capacity;
-	ht->storage  = calloc(capacity, sizeof(Pair));
+	ht->storage  = calloc(capacity, sizeof(Pair *));
 	if (!ht->storage) {
 		free(ht);
 		return NULL;

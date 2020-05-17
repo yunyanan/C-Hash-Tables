@@ -73,7 +73,7 @@ unsigned int hash(char *str, int max)
 */
 HashTable *create_hash_table(int capacity)
 {
-	HashTable *ht = malloc(sizeof(BasicHashTable));
+	HashTable *ht = malloc(sizeof(HashTable));
 
 	if (!ht) {
 		printf("get hashtable memory failed\n");
@@ -106,7 +106,7 @@ void hash_table_insert(HashTable *ht, char *key, char *value)
 	if (pair) {
 		LinkedPair *newpair;
 		while (pair) {
-			if (!strcmp(pair->key key)) {
+			if (!strcmp(pair->key, key)) {
 				free(pair->value);
 				pair->value = strdup(value);
 				return;
@@ -134,11 +134,25 @@ void hash_table_remove(HashTable *ht, char *key)
 {
 	int index = hash(key, ht->capacity);
 	LinkedPair *pair = ht->storage[index];
-	LinkedPair *prev;
+	LinkedPair *prev = NULL;
 
-	if ((pair) && (strcmp(pair->key, key))) {
-
+	while (pair) {
+		if (!strcmp(pair->key, key)) {
+			if (pair->next) {
+				if (!prev) {
+					ht->storage[index] = pair->next;
+				} else {
+					prev->next = pair->next;
+				}
+			}
+			destroy_pair(pair);
+			return;
+		}
+		prev = pair;
+		pair = pair->next;
 	}
+
+	printf("not found the key:%s\n", key);
 }
 
 /*
@@ -151,6 +165,17 @@ void hash_table_remove(HashTable *ht, char *key)
 */
 char *hash_table_retrieve(HashTable *ht, char *key)
 {
+	int index = hash(key, ht->capacity);
+	LinkedPair *pair = ht->storage[index];
+
+	while (pair) {
+		if (strcmp(pair->key, key)) {
+			pair = pair->next;
+		} else {
+			return pair->value;
+		}
+	}
+
 	return NULL;
 }
 
@@ -161,7 +186,20 @@ char *hash_table_retrieve(HashTable *ht, char *key)
 */
 void destroy_hash_table(HashTable *ht)
 {
+	int i;
+	LinkedPair *pair;
+	LinkedPair *prev;
 
+	for (i=0; i<ht->capacity; i++) {
+		pair = ht->storage[i];
+		while (pair) {
+			prev = pair;
+			pair = pair->next;
+			destroy_pair(prev);
+		}
+	}
+	free(ht->storage);
+	free(ht);
 }
 
 /*
@@ -174,7 +212,19 @@ void destroy_hash_table(HashTable *ht)
 */
 HashTable *hash_table_resize(HashTable *ht)
 {
-	HashTable *new_ht;
+	HashTable *new_ht = create_hash_table(2*(ht->capacity));
+	LinkedPair *pair;
+	int i;
+
+	for (i=0; i<ht->capacity; i++) {
+		pair = ht->storage[i];
+		while (pair) {
+			hash_table_insert(new_ht, pair->key, pair->value);
+			pair = pair->next;
+		}
+	}
+
+	destroy_hash_table(ht);
 
 	return new_ht;
 }
